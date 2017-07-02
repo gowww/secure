@@ -18,9 +18,23 @@ Package [secure](https://godoc.org/github.com/gowww/secure) provides utilities t
 
 ## Usage
 
-Use [Encrypt](https://godoc.org/github.com/gowww/secure#Encrypt) to encrypt a secure value:
+### Encrypt
+
+Use [NewEncrypter](https://godoc.org/github.com/gowww/secure#NewEncrypter) to make a new AES-128 encrypter for your secret key.  
+The key must be 32 bytes long:
 
 ```Go
-ck := &http.Secure{}
-ck = secure.Encrypt(ck)
+encrypter, _ := secure.NewEncrypter("secret-key-secret-key-secret-key")
+```
+
+Use [Encrypter.Encrypt](https://godoc.org/github.com/gowww/secure#Encrypter.Encrypt) or [Encrypter.EncryptString](https://godoc.org/github.com/gowww/secure#Encrypter.EncryptString) to encrypt a value:
+
+```Go
+encryptedData, _ := encrypter.EncryptString("data to encrypt")
+```
+
+Use [Encrypter.Decrypt](https://godoc.org/github.com/gowww/secure#Encrypter.Decrypt) or [Encrypter.DecryptString](https://godoc.org/github.com/gowww/secure#Encrypter.DecryptString) to decrypt a value:
+
+```Go
+decryptedData, _ := encrypter.DecryptString("data to encrypt")
 ```

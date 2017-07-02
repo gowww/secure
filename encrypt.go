@@ -17,7 +17,7 @@ type Encrypter interface {
 	DecryptString(string) (string, error)
 }
 
-// NewEncrypter returns a new encrypter for secret key.
+// NewEncrypter returns a new AES-128 encrypter for secret key.
 // The key must be 32 bytes long.
 func NewEncrypter(key string) (Encrypter, error) {
 	if len(key) != 32 {
