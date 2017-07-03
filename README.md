@@ -18,10 +18,11 @@ Package [secure](https://godoc.org/github.com/gowww/secure) provides utilities t
 
 ## Usage
 
-### Encrypt
+### Encryption
 
-Use [NewEncrypter](https://godoc.org/github.com/gowww/secure#NewEncrypter) to make a new AES-128 encrypter for your secret key.  
-The key must be 32 bytes long:
+There are built-in AES-128 encryption helpers.
+
+Use [NewEncrypter](https://godoc.org/github.com/gowww/secure#NewEncrypter) with a 32 bytes long secret key to make a new encrypter:
 
 ```Go
 encrypter, _ := secure.NewEncrypter("secret-key-secret-key-secret-key")
