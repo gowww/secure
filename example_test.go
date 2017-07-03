@@ -37,10 +37,3 @@ func ExampleHandleFunc() {
 
 	http.ListenAndServe(":8080", nil)
 }
-
-func ExampleEncrypter() {
-	encrypter, _ := secure.NewEncrypter("secret-key-secret-key-secret-key")
-	data, _ := encrypter.EncryptString("data to encrypt")
-	data, _ = encrypter.DecryptString(data)
-	fmt.Println(data)
-}
