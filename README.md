@@ -18,8 +18,6 @@ Package [secure](https://godoc.org/github.com/gowww/secure) provides security ut
 
 ## Usage
 
-## Handler
-
 To wrap an [http.Handler](https://golang.org/pkg/net/http/#Handler), use [Handle](https://godoc.org/github.com/gowww/secure#Handle):
 
 ```Go
@@ -43,25 +41,3 @@ http.ListenAndServe(":8080", nil)
 ```
 
 To set custom security options, see [Options](https://godoc.org/github.com/gowww/secure#Options) GoDoc reference.
-
-### Encryption
-
-There are built-in AES-128 encryption helpers.
-
-Use [NewEncrypter](https://godoc.org/github.com/gowww/secure#NewEncrypter) with a 32 bytes long secret key to make a new encrypter:
-
-```Go
-encrypter, _ := secure.NewEncrypter("secret-key-secret-key-secret-key")
-```
-
-Use [Encrypter.Encrypt](https://godoc.org/github.com/gowww/secure#Encrypter.Encrypt) or [Encrypter.EncryptString](https://godoc.org/github.com/gowww/secure#Encrypter.EncryptString) to encrypt a value:
-
-```Go
-encryptedData, _ := encrypter.EncryptString("data to encrypt")
-```
-
-Use [Encrypter.Decrypt](https://godoc.org/github.com/gowww/secure#Encrypter.Decrypt) or [Encrypter.DecryptString](https://godoc.org/github.com/gowww/secure#Encrypter.DecryptString) to decrypt a value:
-
-```Go
-decryptedData, _ := encrypter.DecryptString("data to encrypt")
-```
