@@ -1,4 +1,3 @@
-// Package secure provides security utilities.
 package secure
 
 import (
