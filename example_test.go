@@ -15,7 +15,7 @@ func Example() {
 	})
 
 	http.ListenAndServe(":8080", secure.Handle(mux, &secure.Options{
-		SSLForced:      true,
+		ForceSSL:       true,
 		EnvDevelopment: true,
 	}))
 }

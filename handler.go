@@ -7,14 +7,8 @@ import (
 	"time"
 )
 
-const (
-	// HPKPDefaultMaxAge provides a default HPKP Max-Age value of 30 days.
-	HPKPDefaultMaxAge = 30 * 24 * time.Hour
-	// HSTSDefaultMaxAge provides a default HSTS Max-Age value of 30 days.
-	HSTSDefaultMaxAge = 30 * 24 * time.Hour
-	// HSTSPreloadMinAge is the lowest max age usable with HSTS preload. See https://hstspreload.appspot.com.
-	HSTSPreloadMinAge = 10886400
-)
+// HSTSPreloadMinAge is the lowest max age usable with HSTS preload. See https://hstspreload.appspot.com.
+const HSTSPreloadMinAge = 10886400
 
 // A handler provides a security handler.
 type handler struct {
@@ -26,12 +20,13 @@ type handler struct {
 type Options struct {
 	AllowedHosts   []string     // AllowedHosts indicates which fully qualified domain names are allowed to point to this server. If none are set, all are allowed.
 	CSP            string       // CSP contains Content Security Policy. See http://www.w3.org/TR/CSP and https://developer.mozilla.org/en-US/docs/Web/Security/CSP/Using_Content_Security_Policy.
-	ReferrerPolicy string       // ReferrerPolicy contains Referrer Policy. See https://www.w3.org/TR/referrer-policy.
+	Frame          string       // FrameAllowed indicates whether or not a browser should be allowed to render a page in a frame, iframe or object. Default is FrameSameOrigin.
 	HPKP           *HPKPOptions // HPKP contains the HTTP Public Key Pinning options.
 	HSTS           *HSTSOptions // HPKP contains the HTTP Strict Transport Security options.
-	FrameAllowed   bool         // FrameAllowed indicates whether the browsers can display the response in a frame, regardless of the site attempting to do so.
-	SSLForced      bool         // SSLForced indicates whether an insecure request must be redirected to the secure protocol.
-	EnvDevelopment bool         // EnvDevelopment can be used during development to defuse AllowedHosts, HPKP, HSTS and SSLForced options.
+	ReferrerPolicy string       // ReferrerPolicy contains Referrer Policy. See https://www.w3.org/TR/referrer-policy.
+	XSSProtection  string       // XSSProtection can stop pages from loading when browser detects an XSS attack. Default is XSSProtectionBlock.
+	ForceSSL       bool         // ForceSSL indicates whether an insecure request must be redirected to the secure protocol.
+	EnvDevelopment bool         // EnvDevelopment can be used during development to defuse AllowedHosts, HPKP, HSTS and ForceSSL options.
 }
 
 // HPKPOptions represents HTTP Public Key Pinning options.
@@ -55,11 +50,17 @@ type HSTSOptions struct {
 func Handle(h http.Handler, o *Options) http.Handler {
 	// Validate options (with required fields) from the beginning.
 	if o != nil {
+		if o.Frame == "" {
+			o.Frame = FrameSameOrigin
+		}
 		if o.HPKP != nil {
 			hpkpHeader(o)
 		}
 		if o.HSTS != nil {
 			hstsHeader(o)
+		}
+		if o.XSSProtection == "" {
+			o.Frame = XSSProtectionBlock
 		}
 	}
 	return &handler{h, o}
@@ -84,7 +85,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		SSLOptions:
 			isSSL := r.URL.Scheme == "https" || r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
-			if !isSSL && h.options.SSLForced {
+			if !isSSL && h.options.ForceSSL {
 				r.URL.Scheme = "https"
 				http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
 				return
@@ -106,13 +107,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if h.options == nil || !h.options.FrameAllowed {
-		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
-	}
-
 	// Good practice headers.
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("X-XSS-Protection", "1; mode=block")
+	w.Header().Set("X-Frame-Options", string(h.options.Frame))
+	w.Header().Set("X-XSS-Protection", h.options.XSSProtection)
 
 	h.next.ServeHTTP(w, r)
 }
@@ -142,8 +140,8 @@ func hpkpHeader(o *Options) (v string) {
 }
 
 func hstsHeader(o *Options) (v string) {
-	if !o.SSLForced {
-		panic("secure: SSLForced must be true when using HSTS")
+	if !o.ForceSSL {
+		panic("secure: ForceSSL must be true when using HSTS")
 	}
 	if o.HSTS.MaxAge == 0 {
 		panic("secure: max age must be set when using HSTS")
