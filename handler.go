@@ -60,7 +60,7 @@ func Handle(h http.Handler, o *Options) http.Handler {
 			hstsHeader(o)
 		}
 		if o.XSSProtection == "" {
-			o.Frame = XSSProtectionBlock
+			o.XSSProtection = XSSProtectionBlock
 		}
 	}
 	return &handler{h, o}
