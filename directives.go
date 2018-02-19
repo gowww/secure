@@ -1,4 +1,3 @@
-// Package secure provides security utilities, CSP, HPKP, HSTS and other security wins.
 package secure
 
 import "time"
