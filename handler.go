@@ -2,12 +2,14 @@
 package secure
 
 import (
+	"bufio"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 )
 
-// HSTSPreloadMinAge is the lowest max age usable with HSTS preload. See https://hstspreload.appspot.com.
+// HSTSPreloadMinAge is the lowest max age usable with HSTS preload. See https://hstspreload.org.
 const HSTSPreloadMinAge = 10886400
 
 // A handler provides a security handler.
@@ -108,11 +110,78 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Good practice headers.
-	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", string(h.options.Frame))
 	w.Header().Set("X-XSS-Protection", h.options.XSSProtection)
 
-	h.next.ServeHTTP(w, r)
+	sw := &secureWriter{
+		ResponseWriter: w,
+	}
+	h.next.ServeHTTP(sw, r)
+}
+
+// secureWriter catches header writing to set security headers accordingly.
+type secureWriter struct {
+	http.ResponseWriter
+	headerWritten bool
+}
+
+// Write sets the security headers accordingly to body.
+func (sw *secureWriter) Write(b []byte) (int, error) {
+	if !sw.headerWritten {
+		if len(b) > 0 {
+			sw.Header().Set("X-Content-Type-Options", "nosniff")
+		}
+		sw.headerWritten = true
+	}
+	return sw.ResponseWriter.Write(b)
+}
+
+// CloseNotify implements the http.CloseNotifier interface.
+// No channel is returned if CloseNotify is not implemented by an upstream response writer.
+func (sw *secureWriter) CloseNotify() <-chan bool {
+	n, ok := sw.ResponseWriter.(http.CloseNotifier)
+	if !ok {
+		return nil
+	}
+	return n.CloseNotify()
+}
+
+// Flush implements the http.Flusher interface.
+// Nothing is done if Flush is not implemented by an upstream response writer.
+func (sw *secureWriter) Flush() {
+	f, ok := sw.ResponseWriter.(http.Flusher)
+	if ok {
+		f.Flush()
+	}
+}
+
+// Hijack implements the http.Hijacker interface.
+// Error http.ErrNotSupported is returned if Hijack is not implemented by an upstream response writer.
+func (sw *secureWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := sw.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, http.ErrNotSupported
+	}
+	return h.Hijack()
+}
+
+// Push implements the http.Pusher interface.
+// http.ErrNotSupported is returned if Push is not implemented by an upstream response writer or not supported by the client.
+func (sw *secureWriter) Push(target string, opts *http.PushOptions) error {
+	p, ok := sw.ResponseWriter.(http.Pusher)
+	if !ok {
+		return http.ErrNotSupported
+	}
+	if opts == nil {
+		opts = new(http.PushOptions)
+	}
+	if opts.Header == nil {
+		opts.Header = make(http.Header)
+	}
+	if enc := opts.Header.Get("Accept-Encoding"); enc == "" {
+		opts.Header.Add("Accept-Encoding", "gzip")
+	}
+	return p.Push(target, opts)
 }
 
 func hpkpHeader(o *Options) (v string) {
