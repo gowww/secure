@@ -6,15 +6,15 @@ Package [secure](https://godoc.org/github.com/gowww/secure) provides security ut
 
 1. Get package:
 
-	```Shell
-	go get -u github.com/gowww/secure
-	```
+   ```Shell
+   go get -u github.com/gowww/secure
+   ```
 
 2. Import it in your code:
 
-	```Go
-	import "github.com/gowww/secure"
-	```
+   ```Go
+   import "github.com/gowww/secure"
+   ```
 
 ## Usage
 
